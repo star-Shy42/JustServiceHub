@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import Review from "@/models/Review";
-import Booking from "@/models/Booking";
-import Service from "@/models/Service";
+import prisma from "@/lib/prisma";
 import { withAuth } from "@/middleware/auth";
 
 export const POST = withAuth(async (request: NextRequest, user: any) => {
   try {
-    await dbConnect();
-
     const { bookingId, rating, comment } = await request.json();
 
     // Validation
@@ -27,12 +22,18 @@ export const POST = withAuth(async (request: NextRequest, user: any) => {
     }
 
     // Check if booking exists and belongs to user
-    const booking = await Booking.findById(bookingId);
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        service: true,
+        provider: true,
+      },
+    });
     if (!booking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    if (booking.user?.toString() !== user.userId) {
+    if (booking.userId !== user.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -44,9 +45,8 @@ export const POST = withAuth(async (request: NextRequest, user: any) => {
     }
 
     // Check if review already exists
-    const existingReview = await Review.findOne({
-      booking: bookingId,
-      user: user.userId,
+    const existingReview = await prisma.review.findUnique({
+      where: { bookingId },
     });
     if (existingReview) {
       return NextResponse.json(
@@ -56,23 +56,25 @@ export const POST = withAuth(async (request: NextRequest, user: any) => {
     }
 
     // Create review
-    const review = await Review.create({
-      user: user.userId,
-      service: booking.service,
-      provider: booking.provider,
-      booking: bookingId,
-      rating,
-      comment,
+    const review = await prisma.review.create({
+      data: {
+        userId: user.userId,
+        serviceId: booking.serviceId,
+        providerId: booking.providerId,
+        bookingId: bookingId,
+        rating,
+        comment,
+      },
     });
 
     // Update service rating
-    await updateServiceRating(booking.service.toString());
+    await updateServiceRating(booking.serviceId);
 
     return NextResponse.json(
       {
         message: "Review created successfully",
         review: {
-          id: review._id,
+          id: review.id,
           rating: review.rating,
           comment: review.comment,
           createdAt: review.createdAt,
@@ -90,15 +92,21 @@ export const POST = withAuth(async (request: NextRequest, user: any) => {
 });
 
 async function updateServiceRating(serviceId: string) {
-  const reviews = await Review.find({ service: serviceId });
+  const reviews = await prisma.review.findMany({
+    where: { serviceId },
+    select: { rating: true },
+  });
 
   if (reviews.length > 0) {
     const avgRating =
-      reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+      reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / reviews.length;
 
-    await Service.findByIdAndUpdate(serviceId, {
-      rating: Math.round(avgRating * 10) / 10, // Round to 1 decimal place
-      reviewCount: reviews.length,
+    await prisma.service.update({
+      where: { id: serviceId },
+      data: {
+        rating: Math.round(avgRating * 10) / 10, // Round to 1 decimal place
+        reviewCount: reviews.length,
+      },
     });
   }
 }

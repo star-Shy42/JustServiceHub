@@ -1,48 +1,74 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import Booking from "@/models/Booking";
-import Service from "@/models/Service";
+import prisma from "@/lib/prisma";
 import { withAuth } from "@/middleware/auth";
 
 export const GET = withAuth(async (request: NextRequest, user: any) => {
   try {
-    await dbConnect();
-
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
 
-    let filter: any = {};
+    const skip = (page - 1) * limit;
+
+    let where: any = {};
 
     if (user.role === "user") {
-      filter.user = user.userId;
+      where.userId = user.userId;
     } else if (user.role === "provider") {
-      filter.provider = user.userId;
+      where.providerId = user.userId;
     }
 
-    if (status) filter.status = status;
+    if (status) where.status = status;
 
-    const bookings = await Booking.find(filter)
-      .populate("service", "name description price duration")
-      .populate("user", "name email phone")
-      .populate("provider", "name email phone")
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit);
+    const bookings = await prisma.booking.findMany({
+      where,
+      include: {
+        service: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            duration: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        provider: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip,
+      take: limit,
+    });
 
-    const total = await Booking.countDocuments(filter);
+    const total = await prisma.booking.count({ where });
 
     return NextResponse.json({
-      bookings: bookings.map((booking) => ({
-        id: booking._id,
+      bookings: bookings.map((booking: any) => ({
+        id: booking.id,
         date: booking.date,
         status: booking.status,
         notes: booking.notes,
         totalPrice: booking.totalPrice,
         paymentStatus: booking.paymentStatus,
         service: {
-          id: booking.service._id,
+          id: booking.service.id,
           name: booking.service.name,
           description: booking.service.description,
           price: booking.service.price,
@@ -51,7 +77,7 @@ export const GET = withAuth(async (request: NextRequest, user: any) => {
         user:
           user.role === "provider"
             ? {
-                id: booking.user._id,
+                id: booking.user.id,
                 name: booking.user.name,
                 email: booking.user.email,
                 phone: booking.user.phone,
@@ -60,7 +86,7 @@ export const GET = withAuth(async (request: NextRequest, user: any) => {
         provider:
           user.role === "user"
             ? {
-                id: booking.provider._id,
+                id: booking.provider.id,
                 name: booking.provider.name,
                 email: booking.provider.email,
                 phone: booking.provider.phone,
@@ -86,8 +112,6 @@ export const GET = withAuth(async (request: NextRequest, user: any) => {
 
 export const POST = withAuth(async (request: NextRequest, user: any) => {
   try {
-    await dbConnect();
-
     const { serviceId, date, notes } = await request.json();
 
     // Validation
@@ -99,7 +123,9 @@ export const POST = withAuth(async (request: NextRequest, user: any) => {
     }
 
     // Check if service exists and is active
-    const service = await Service.findById(serviceId);
+    const service = await prisma.service.findUnique({
+      where: { id: serviceId },
+    });
     if (!service || !service.isActive) {
       return NextResponse.json(
         { error: "Service not found or unavailable" },
@@ -107,16 +133,8 @@ export const POST = withAuth(async (request: NextRequest, user: any) => {
       );
     }
 
-    // Check if service has a provider
-    if (!service.provider) {
-      return NextResponse.json(
-        { error: "Service is not available" },
-        { status: 400 }
-      );
-    }
-
     // Check if user is not booking their own service
-    if (service.provider.toString() === user.userId) {
+    if (service.providerId === user.userId) {
       return NextResponse.json(
         { error: "Cannot book your own service" },
         { status: 400 }
@@ -124,10 +142,14 @@ export const POST = withAuth(async (request: NextRequest, user: any) => {
     }
 
     // Check for conflicting bookings
-    const conflictingBooking = await Booking.findOne({
-      service: serviceId,
-      date: new Date(date),
-      status: { $in: ["pending", "confirmed", "in_progress"] },
+    const conflictingBooking = await prisma.booking.findFirst({
+      where: {
+        serviceId: serviceId,
+        date: new Date(date),
+        status: {
+          in: ["pending", "confirmed", "in_progress"],
+        },
+      },
     });
 
     if (conflictingBooking) {
@@ -138,25 +160,27 @@ export const POST = withAuth(async (request: NextRequest, user: any) => {
     }
 
     // Create booking
-    const booking = await Booking.create({
-      user: user.userId,
-      service: serviceId,
-      provider: service.provider,
-      date: new Date(date),
-      notes,
-      totalPrice: service.price,
+    const booking = await prisma.booking.create({
+      data: {
+        userId: user.userId,
+        serviceId: serviceId,
+        providerId: service.providerId,
+        date: new Date(date),
+        notes,
+        totalPrice: service.price,
+      },
     });
 
     return NextResponse.json(
       {
         message: "Booking created successfully",
         booking: {
-          id: booking._id,
+          id: booking.id,
           date: booking.date,
           status: booking.status,
           totalPrice: booking.totalPrice,
           service: {
-            id: service._id,
+            id: service.id,
             name: service.name,
             description: service.description,
           },

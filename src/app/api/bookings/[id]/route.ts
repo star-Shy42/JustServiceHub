@@ -1,21 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import Booking from "@/models/Booking";
-import Review from "@/models/Review";
-import Service from "@/models/Service";
+import prisma from "@/lib/prisma";
 import { withAuth } from "@/middleware/auth";
 
 export const GET = withAuth(async (request: NextRequest, user: any) => {
   try {
-    await dbConnect();
-
     const { pathname } = new URL(request.url);
     const id = pathname.split("/").pop();
 
-    const booking = await Booking.findById(id)
-      .populate("service", "name description price duration location")
-      .populate("user", "name email phone address")
-      .populate("provider", "name email phone address");
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      include: {
+        service: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            duration: true,
+            location: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            address: true,
+          },
+        },
+        provider: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            address: true,
+          },
+        },
+      },
+    });
 
     if (!booking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
@@ -23,13 +47,8 @@ export const GET = withAuth(async (request: NextRequest, user: any) => {
 
     // Check if user has permission to view this booking
     // Allow access if user is the customer, provider, or admin
-    const bookingUserId =
-      booking.user?._id?.toString() || booking.user?.toString();
-    const bookingProviderId =
-      booking.provider?._id?.toString() || booking.provider?.toString();
-
-    const isCustomer = bookingUserId === user.userId;
-    const isProvider = bookingProviderId === user.userId;
+    const isCustomer = booking.userId === user.userId;
+    const isProvider = booking.providerId === user.userId;
     const isAdmin = user.role === "admin";
 
     if (!isCustomer && !isProvider && !isAdmin) {
@@ -37,18 +56,20 @@ export const GET = withAuth(async (request: NextRequest, user: any) => {
     }
 
     // Check if review exists
-    const review = await Review.findOne({ booking: id, user: user.userId });
+    const review = await prisma.review.findFirst({
+      where: { bookingId: id, userId: user.userId },
+    });
 
     return NextResponse.json({
       booking: {
-        id: booking._id,
+        id: booking.id,
         date: booking.date,
         status: booking.status,
         notes: booking.notes,
         totalPrice: booking.totalPrice,
         paymentStatus: booking.paymentStatus,
         service: {
-          id: booking.service._id,
+          id: booking.service.id,
           name: booking.service.name,
           description: booking.service.description,
           price: booking.service.price,
@@ -56,14 +77,14 @@ export const GET = withAuth(async (request: NextRequest, user: any) => {
           location: booking.service.location,
         },
         user: {
-          id: booking.user._id,
+          id: booking.user.id,
           name: booking.user.name,
           email: booking.user.email,
           phone: booking.user.phone,
           address: booking.user.address,
         },
         provider: {
-          id: booking.provider._id,
+          id: booking.provider.id,
           name: booking.provider.name,
           email: booking.provider.email,
           phone: booking.provider.phone,
@@ -85,12 +106,12 @@ export const GET = withAuth(async (request: NextRequest, user: any) => {
 
 export const PUT = withAuth(async (request: NextRequest, user: any) => {
   try {
-    await dbConnect();
-
     const { pathname } = new URL(request.url);
     const id = pathname.split("/").pop();
 
-    const booking = await Booking.findById(id);
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+    });
     if (!booking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
@@ -98,13 +119,13 @@ export const PUT = withAuth(async (request: NextRequest, user: any) => {
     const { status, notes } = await request.json();
 
     // Authorization checks
-    if (user.role === "user" && booking.user.toString() !== user.userId) {
+    if (user.role === "user" && booking.userId !== user.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     if (
       user.role === "provider" &&
-      booking.provider.toString() !== user.userId
+      booking.providerId !== user.userId
     ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
@@ -127,16 +148,17 @@ export const PUT = withAuth(async (request: NextRequest, user: any) => {
     if (status) updateData.status = status;
     if (notes !== undefined) updateData.notes = notes;
 
-    const updatedBooking = await Booking.findByIdAndUpdate(id, updateData, {
-      new: true,
+    const updatedBooking = await prisma.booking.update({
+      where: { id },
+      data: updateData,
     });
 
     return NextResponse.json({
       message: "Booking updated successfully",
       booking: {
-        id: updatedBooking!._id,
-        status: updatedBooking!.status,
-        notes: updatedBooking!.notes,
+        id: updatedBooking.id,
+        status: updatedBooking.status,
+        notes: updatedBooking.notes,
       },
     });
   } catch (error) {
@@ -150,12 +172,12 @@ export const PUT = withAuth(async (request: NextRequest, user: any) => {
 
 export const DELETE = withAuth(async (request: NextRequest, user: any) => {
   try {
-    await dbConnect();
-
     const { pathname } = new URL(request.url);
     const id = pathname.split("/").pop();
 
-    const booking = await Booking.findById(id);
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+    });
     if (!booking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
@@ -170,14 +192,17 @@ export const DELETE = withAuth(async (request: NextRequest, user: any) => {
 
     // Check permissions
     if (
-      booking.user.toString() !== user.userId &&
-      booking.provider.toString() !== user.userId &&
+      booking.userId !== user.userId &&
+      booking.providerId !== user.userId &&
       user.role !== "admin"
     ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    await Booking.findByIdAndUpdate(id, { status: "cancelled" });
+    await prisma.booking.update({
+      where: { id },
+      data: { status: "cancelled" },
+    });
 
     return NextResponse.json({ message: "Booking cancelled successfully" });
   } catch (error) {

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 
 interface Service {
@@ -45,11 +44,7 @@ export default function ProviderDashboard() {
     isActive: true,
   });
   const [submitting, setSubmitting] = useState(false);
-  const { user } = useAuth();
-
-  useEffect(() => {
-    fetchServices();
-  }, []);
+  const user: any = JSON.parse(localStorage.getItem("user") as string);
 
   const fetchServices = async () => {
     try {
@@ -61,8 +56,8 @@ export default function ProviderDashboard() {
       const data = await response.json();
       // Filter services for this provider
       setServices(
-        data.services.filter(
-          (service: any) => service.provider.id === user?.id
+        data.services?.filter(
+          (service: any) => service?.provider?.id === user.id
         ) || []
       );
     } catch (error) {
@@ -209,6 +204,10 @@ export default function ProviderDashboard() {
     "sunday",
   ];
 
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-64">
@@ -262,7 +261,7 @@ export default function ProviderDashboard() {
                     type="text"
                     id="name"
                     required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    className="pl-2 mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     value={formData.name}
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
@@ -306,7 +305,7 @@ export default function ProviderDashboard() {
                     required
                     min="0"
                     step="0.01"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    className="pl-2 mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     value={formData.price}
                     onChange={(e) =>
                       setFormData({ ...formData, price: e.target.value })
@@ -325,7 +324,7 @@ export default function ProviderDashboard() {
                     id="duration"
                     required
                     min="1"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    className="pl-2 mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     value={formData.duration}
                     onChange={(e) =>
                       setFormData({ ...formData, duration: e.target.value })
@@ -345,7 +344,7 @@ export default function ProviderDashboard() {
                   id="description"
                   required
                   rows={3}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="pl-2 mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
@@ -364,7 +363,7 @@ export default function ProviderDashboard() {
                   type="text"
                   id="location"
                   required
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="pl-2 mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   value={formData.location}
                   onChange={(e) =>
                     setFormData({ ...formData, location: e.target.value })
@@ -455,7 +454,7 @@ export default function ProviderDashboard() {
                 <input
                   type="text"
                   id="tags"
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="pl-2 mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   placeholder="e.g., professional, reliable, experienced"
                   value={formData.tags}
                   onChange={(e) =>
@@ -513,17 +512,7 @@ export default function ProviderDashboard() {
 
       {/* Services List */}
       <div className="mt-8">
-        {services.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No services created yet.</p>
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="text-indigo-600 hover:text-indigo-500 mt-4 inline-block"
-            >
-              Create your first service
-            </button>
-          </div>
-        ) : (
+        {services.length !== 0 ? (
           <div className="bg-white shadow overflow-hidden sm:rounded-md">
             <ul className="divide-y divide-gray-200">
               {services.map((service) => (
@@ -605,6 +594,16 @@ export default function ProviderDashboard() {
                 </li>
               ))}
             </ul>
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-500">No services created yet.</p>
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="text-indigo-600 hover:text-indigo-500 mt-4 inline-block"
+            >
+              Create your first service
+            </button>
           </div>
         )}
       </div>

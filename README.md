@@ -1,433 +1,311 @@
-# E-Commerce Service Platform
+# Home Service Discovery Platform
 
-A comprehensive full-stack service marketplace built with Next.js, React, and MongoDB. Connects customers with service providers for home repairs, cleaning, tutoring, fitness training, and various other services. Features AI-powered recommendations, real-time booking management, review systems, and role-based dashboards.
+A comprehensive home service marketplace built with Next.js, enabling users to discover, book, and review home services while providing providers with tools to manage their offerings.
 
-## 🚀 Live Demo
+## 🌟 Features
 
-[View the application](https://your-deployed-url.com) _(Replace with your actual deployment URL)_
+### For Users
+- **Service Discovery**: Browse and search home services by category
+- **Smart Recommendations**: AI-powered service recommendations using machine learning
+- **Booking Management**: Complete booking lifecycle with status tracking
+- **Review System**: Rate and review services after completion
+- **User Dashboard**: Track bookings, reviews, and profile management
+- **Secure Authentication**: JWT-based authentication with role-based access
 
-## ✨ Features
+### For Service Providers
+- **Provider Dashboard**: Manage services, bookings, and customer interactions
+- **Service Management**: Create, edit, and manage service offerings
+- **Booking Management**: Accept, manage, and update booking statuses
+- **Profile Management**: Build provider reputation with verified profiles
+- **Review Management**: Monitor and respond to customer feedback
 
-### 🎯 Core Functionality
+### For Administrators
+- **Admin Dashboard**: Platform oversight and user management
+- **Content Moderation**: Manage services, reviews, and user reports
+- **Analytics**: Platform performance and usage insights
 
-- **Service Discovery**: Browse and search services by category, location, and price
-- **AI-Powered Recommendations**: Intelligent service matching using natural language processing
-- **Real-time Booking System**: Instant booking with conflict detection and status tracking
-- **Multi-role Platform**: Support for customers, service providers, and administrators
-- **Review & Rating System**: 5-star rating system with detailed customer reviews
-- **Advanced Search & Filtering**: Filter by category, location, price, and AI-powered search
-- **Role-based Dashboards**: Separate interfaces for customers, providers, and admins
-
-### 👥 User Roles & Features
-
-- **Customers**:
-
-  - Browse and search services
-  - Book appointments with real-time availability
-  - Leave reviews and ratings for completed services
-  - Manage personal booking history
-  - Receive AI-powered service recommendations
-
-- **Service Providers**:
-
-  - Create and manage service listings
-  - Set pricing, availability, and service details
-  - Handle booking requests and status updates
-  - View customer reviews and ratings
-  - Track business performance
-
-- **Administrators**:
-  - Platform oversight and user management
-  - Service moderation and quality control
-  - System monitoring and analytics
-  - User role management
-
-### 🔧 Technical Features
-
-- **JWT Authentication**: Secure stateless authentication with role-based access control
-- **MongoDB Integration**: Robust NoSQL database with Mongoose ODM and data relationships
-- **RESTful API**: Well-structured endpoints with proper HTTP methods and status codes
-- **Responsive Design**: Mobile-first UI built with Tailwind CSS and custom components
-- **Type Safety**: Full TypeScript implementation with strict type checking
-- **Security**: Input validation, authentication middleware, CORS, and security headers
-- **AI Integration**: Hugging Face Transformers for natural language processing
-- **Real-time Features**: Dynamic booking status updates and conflict detection
-
-## 🛠️ Tech Stack
-
-### Backend
-
-- **Framework**: Next.js 16 with App Router
-- **Language**: TypeScript
-- **Database**: MongoDB with Mongoose ODM
-- **Authentication**: JWT (JSON Web Tokens)
-- **AI/ML**: Hugging Face Transformers
-- **Validation**: Zod schemas
-- **Security**: bcryptjs, custom security middleware
+## 🛠 Tech Stack
 
 ### Frontend
+- **Next.js 16**: React framework with App Router
+- **React 19**: Modern React with concurrent features
+- **TypeScript**: Type-safe development
+- **Tailwind CSS 4**: Utility-first CSS framework
 
-- **Framework**: Next.js 16 (React)
-- **Styling**: Tailwind CSS
-- **State Management**: React Context API
-- **UI Components**: Custom components with Tailwind
-- **Icons**: Emoji and custom SVG icons
+### Backend
+- **Next.js API Routes**: Server-side API endpoints
+- **Prisma ORM**: Type-safe database client
+- **PostgreSQL**: Primary database
+- **JWT**: Authentication and authorization
 
-### DevOps & Tools
+### AI & ML
+- **Hugging Face Transformers**: AI-powered recommendations
+- **Custom Recommendation Engine**: Service matching algorithms
 
-- **Containerization**: Docker & Docker Compose
-- **Linting**: ESLint
-- **Code Formatting**: Prettier
-- **Package Manager**: npm
+### DevOps & Deployment
+- **Docker**: Containerization support
+- **Docker Compose**: Multi-container development
+- **ESLint**: Code linting and formatting
+- **PostCSS**: CSS processing
 
-## 📱 Application Pages
+## 🚀 Quick Start
 
-### Public Pages (No Authentication Required)
+### Prerequisites
+- Node.js 18+ 
+- PostgreSQL database
+- Docker (optional, for containerized deployment)
 
-- **Home** (`/`) - Service discovery with search, filtering, and AI recommendations
-- **AI Recommendations** (`/recommendations`) - Dedicated AI-powered service matching page
-- **Service Details** (`/services/[id]`) - Individual service pages with booking form and reviews
-- **Login** (`/auth/login`) - User authentication with role selection
-- **Register** (`/auth/register`) - User registration (customer or service provider)
+### Installation
 
-### Protected Pages (Authentication Required)
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd home-service-discovery
+   ```
 
-- **Customer Dashboard** (`/dashboard/bookings`) - View and manage personal bookings, leave reviews
-- **Provider Dashboard** (`/dashboard/provider`) - Create and manage service listings, handle bookings
-- **Admin Panel** (`/admin`) - Platform administration, user management, system monitoring
-- **Review Page** (`/services/[bookingId]/review`) - Leave reviews for completed services
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-## 🔌 API Endpoints
+3. **Environment Setup**
+   Create a `.env` file in the root directory:
+   ```env
+   DATABASE_URL="postgresql://postgres:password@localhost:5432/home_service_discovery"
+   JWT_SECRET="your-super-secret-jwt-key-here"
+   NEXT_PUBLIC_API_URL="http://localhost:3000"
+   ```
+
+4. **Database Setup**
+   ```bash
+   # Generate Prisma client
+   npx prisma generate
+   
+   # Run database migrations
+   npx prisma db push
+   
+   # (Optional) Seed database
+   npx prisma db seed
+   ```
+
+5. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
+
+   Visit `http://localhost:3000` to access the application.
+
+### Docker Deployment
+
+1. **Build and run with Docker Compose**
+   ```bash
+   docker-compose up --build
+   ```
+
+   This will start:
+   - Next.js application on port 3000
+   - PostgreSQL database on port 5432
+
+## 📁 Project Structure
+
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   │   ├── auth/          # Authentication endpoints
+│   │   ├── bookings/      # Booking management
+│   │   ├── providers/     # Provider operations
+│   │   ├── services/      # Service CRUD operations
+│   │   ├── reviews/       # Review system
+│   │   └── recommendations/ # AI recommendations
+│   ├── auth/              # Authentication pages
+│   ├── dashboard/         # User dashboards
+│   ├── services/          # Service browsing
+│   └── admin/             # Admin panel
+├── components/            # Reusable UI components
+├── context/               # React context providers
+├── lib/                   # Utility libraries
+│   ├── auth.ts           # Authentication helpers
+│   ├── prisma.ts         # Database client
+│   ├── security.ts       # Security utilities
+│   ├── validation.ts     # Input validation
+│   └── ai.ts             # AI/ML utilities
+├── middleware/            # Next.js middleware
+└── models/                # Data models
+```
+
+## 🗄 Database Schema
+
+### Core Models
+
+**User**
+- Role-based access (user, provider, admin)
+- Profile management with verification
+- Authentication with secure password hashing
+
+**Service**
+- Service offerings with detailed information
+- Category-based organization
+- Pricing and availability management
+- Rating and review aggregation
+
+**Booking**
+- Complete booking lifecycle management
+- Status tracking (pending → confirmed → in_progress → completed)
+- Payment status integration
+- Provider-user relationship management
+
+**Review**
+- Post-service feedback system
+- Rating aggregation
+- Provider reputation building
+
+## 🔐 Authentication
+
+The platform uses JWT-based authentication with the following features:
+
+- **Registration**: User and provider registration with email verification
+- **Login**: Secure login with password hashing (bcryptjs)
+- **Profile Management**: User profile updates and verification
+- **Role-Based Access**: Different permissions for users, providers, and admins
+- **Session Management**: Secure token handling and refresh
+
+## 🤖 AI Recommendations
+
+The platform includes an AI-powered recommendation system:
+
+- **Service Matching**: ML-based service recommendations
+- **User Behavior Analysis**: Personalized suggestions
+- **Provider Matching**: Smart provider recommendations
+- **Hugging Face Integration**: State-of-the-art transformer models
+
+## 📡 API Endpoints
 
 ### Authentication
-
 - `POST /api/auth/register` - User registration
 - `POST /api/auth/login` - User login
 - `GET /api/auth/profile` - Get user profile
 - `PUT /api/auth/profile` - Update user profile
 
 ### Services
-
-- `GET /api/services` - List/search services (with AI recommendations)
-- `POST /api/services` - Create service (providers only)
-- `GET /api/services/[id]` - Get service details with reviews
+- `GET /api/services` - List services with filtering
+- `POST /api/services` - Create new service (providers only)
+- `GET /api/services/[id]` - Get service details
 - `PUT /api/services/[id]` - Update service (providers only)
 - `DELETE /api/services/[id]` - Delete service (providers only)
 
 ### Bookings
-
-- `GET /api/bookings` - List user/provider bookings
-- `POST /api/bookings` - Create booking with conflict checking
+- `GET /api/bookings` - List user bookings
+- `POST /api/bookings` - Create new booking
 - `GET /api/bookings/[id]` - Get booking details
 - `PUT /api/bookings/[id]` - Update booking status
-- `DELETE /api/bookings/[id]` - Cancel booking
 
 ### Providers
+- `GET /api/providers` - List service providers
+- `GET /api/providers/[id]` - Get provider details
 
-- `GET /api/providers` - List service providers with stats
-- `POST /api/providers` - Create provider account (admin only)
+### Reviews
+- `GET /api/reviews` - List service reviews
+- `POST /api/reviews` - Create new review
+- `PUT /api/reviews/[id]` - Update review
 
-### Reviews & Ratings
+### Recommendations
+- `GET /api/recommendations` - Get personalized recommendations
 
-- `POST /api/reviews` - Create review for completed booking
-- Automatic rating calculation and service rating updates
+## 🧪 Development
 
-### AI Recommendations
+### Available Scripts
 
-- `GET /api/recommendations` - Get AI-powered service recommendations
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `npx prisma studio` - Open Prisma database browser
 
-## 🚀 Getting Started
+### Code Quality
 
-### Prerequisites
+The project uses:
+- **ESLint**: Code linting and formatting
+- **TypeScript**: Type safety and better developer experience
+- **Prisma**: Type-safe database access
+- **Zod**: Runtime type validation
 
-- Node.js 18+
-- MongoDB (local or MongoDB Atlas)
-- npm or yarn
+### Security Features
 
-### Installation
+- **Input Validation**: All inputs validated using Zod schemas
+- **Password Hashing**: bcryptjs for secure password storage
+- **JWT Security**: Secure token-based authentication
+- **SQL Injection Protection**: Prisma ORM prevents SQL injection
+- **CSRF Protection**: Built-in Next.js CSRF protection
 
-1. **Clone the repository**
+## 🚀 Deployment
 
-```bash
-git clone <repository-url>
-cd service-platform
-```
+### Production Environment
 
-2. **Install dependencies**
+1. **Environment Variables**
+   ```env
+   DATABASE_URL="postgresql://user:password@host:5432/database"
+   JWT_SECRET="production-jwt-secret"
+   NEXT_PUBLIC_API_URL="https://your-domain.com"
+   ```
 
-```bash
-npm install
-```
+2. **Build and Deploy**
+   ```bash
+   npm run build
+   npm start
+   ```
 
-3. **Set up environment variables**
+3. **Database Migration**
+   ```bash
+   npx prisma migrate deploy
+   ```
 
-```bash
-cp .env.local.example .env.local
-```
-
-Edit `.env.local` with your configuration:
-
-```env
-MONGODB_URI=mongodb://localhost:27017/service-platform
-JWT_SECRET=your-super-secret-jwt-key-here
-NEXT_PUBLIC_API_URL=http://localhost:3000
-```
-
-4. **Start MongoDB**
-
-```bash
-# Using Docker
-docker run -d -p 27017:27017 --name mongodb mongo:latest
-
-# Or using local MongoDB installation
-mongod
-```
-
-5. **Run the development server**
-
-```bash
-npm run dev
-```
-
-6. **Open your browser**
-   Navigate to `http://localhost:3000` to see the application running!
-
-### Building for Production
-
-1. **Build the application**
+### Docker Production
 
 ```bash
-npm run build
-```
-
-2. **Start the production server**
-
-```bash
-npm run start
-```
-
-The application will be available at `http://localhost:3000`.
-
-### 🎯 Quick Start Guide
-
-1. **Register as a Customer or Provider**
-
-   - Visit the registration page and choose your role
-   - Customers can browse and book services
-   - Service providers can create and manage listings
-
-2. **For Service Providers:**
-
-   - Navigate to "My Services" in the dashboard
-   - Create detailed service listings with pricing and availability
-   - Manage booking requests and update service status
-   - View customer reviews and track performance
-
-3. **For Customers:**
-
-   - Browse services on the home page with advanced filtering
-   - Use AI-powered recommendations for personalized suggestions
-   - Book services directly with real-time availability checking
-   - Leave detailed reviews after service completion
-
-4. **Explore Advanced Features:**
-   - Try natural language search ("house cleaning near me")
-   - Use AI recommendations for discovering new services
-   - Manage all bookings and reviews in your personal dashboard
-   - Track service provider performance and ratings
-
-## Environment Variables
-
-| Variable              | Description               | Default                 |
-| --------------------- | ------------------------- | ----------------------- |
-| `MONGODB_URI`         | MongoDB connection string | Required                |
-| `JWT_SECRET`          | JWT signing secret        | Required                |
-| `NEXT_PUBLIC_API_URL` | API base URL              | `http://localhost:3000` |
-| `ALLOWED_ORIGINS`     | CORS allowed origins      | `*`                     |
-
-## 📊 Database Models
-
-### User Model
-
-```typescript
-{
-  name: string;
-  email: string;
-  password: string; // hashed
-  phone?: string;
-  address?: string;
-  role: "user" | "provider" | "admin";
-  isVerified: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-```
-
-### Service Model
-
-```typescript
-{
-  name: string;
-  description: string;
-  category: string;
-  price: number;
-  duration: number; // in minutes
-  provider: ObjectId;
-  location: string;
-  availability: {
-    days: string[]; // ['monday', 'tuesday', etc.]
-    startTime: string; // '09:00'
-    endTime: string; // '17:00'
-  };
-  tags: string[];
-  rating: number;
-  reviewCount: number;
-  isActive: boolean;
-}
-```
-
-### Booking Model
-
-```typescript
-{
-  user: ObjectId;
-  service: ObjectId;
-  provider: ObjectId;
-  date: Date;
-  status: "pending" | "confirmed" | "in_progress" | "completed" | "cancelled";
-  notes?: string;
-  totalPrice: number;
-  paymentStatus: "pending" | "paid" | "refunded";
-}
-```
-
-### Review Model
-
-```typescript
-{
-  user: ObjectId;
-  service: ObjectId;
-  provider: ObjectId;
-  booking: ObjectId;
-  rating: number; // 1-5
-  comment?: string;
-}
-```
-
-## Security Features
-
-- JWT-based stateless authentication
-- Password hashing with bcrypt
-- Input validation and sanitization
-- Rate limiting
-- CORS configuration
-- Security headers
-- SQL injection prevention
-- XSS protection
-
-## AI Integration
-
-The platform uses Hugging Face Transformers for:
-
-- Natural language processing for service search
-- Semantic similarity matching
-- Intelligent service recommendations based on user queries
-
-## Deployment
-
-### Production Considerations
-
-1. **Database**: Use MongoDB Atlas or a managed MongoDB service
-2. **Environment Variables**: Set production values for all required variables
-3. **Rate Limiting**: Implement Redis-based rate limiting for production
-4. **Monitoring**: Add logging and monitoring solutions
-5. **SSL/TLS**: Ensure HTTPS in production
-6. **Backup**: Set up database backups
-
-### Docker Deployment
-
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
-EXPOSE 3000
-CMD ["npm", "start"]
-```
-
-## API Documentation
-
-### Authentication
-
-All protected endpoints require a Bearer token in the Authorization header:
-
-```
-Authorization: Bearer <jwt-token>
-```
-
-### Response Format
-
-Success responses:
-
-```json
-{
-  "data": {...},
-  "message": "Success message"
-}
-```
-
-Error responses:
-
-```json
-{
-  "error": "Error message",
-  "details": {...}
-}
+docker-compose -f docker-compose.prod.yml up --build
 ```
 
 ## 🤝 Contributing
 
-We welcome contributions! Here's how you can help:
-
-1. **Fork the repository**
-2. **Create a feature branch**
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-3. **Make your changes**
-4. **Test thoroughly**
-5. **Submit a pull request**
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ### Development Guidelines
 
 - Follow TypeScript best practices
-- Write clear, concise commit messages
-- Test both frontend and backend functionality
-- Ensure responsive design works on all devices
-- Follow the existing code style and patterns
+- Use Prisma for all database operations
+- Implement proper error handling
+- Add validation for all inputs
+- Write meaningful commit messages
+- Test your changes thoroughly
 
-## 📄 License
+## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🙏 Acknowledgments
+## 🆘 Support
 
-- **Next.js** - The React framework for production
-- **Tailwind CSS** - A utility-first CSS framework
-- **MongoDB** - NoSQL database for modern applications
-- **Hugging Face** - AI/ML models for natural language processing
-- **Vercel** - Platform for frontend frameworks and static sites
-
-## 📞 Support
-
-If you have any questions or need help:
-
-- Open an issue on GitHub
+For support and questions:
+- Create an issue in the repository
 - Check the documentation
-- Join our community discussions
+- Review the API endpoints
+
+## 🔄 Changelog
+
+### Version 0.1.0
+- Initial release
+- Basic authentication system
+- Service booking functionality
+- Provider management
+- Review and rating system
+- AI-powered recommendations
+- Admin dashboard
+- Docker support
 
 ---
 
-**Happy coding! 🎉**
+**Built with ❤️ using Next.js, Prisma, and modern web technologies**

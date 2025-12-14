@@ -222,14 +222,13 @@ export default function BookingsDashboard() {
                         <span>
                           📅 {new Date(booking.date).toLocaleString()}
                         </span>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                        <h1
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-md font-medium ${getStatusColor(
                             booking.status
                           )}`}
                         >
                           {booking.status.replace("_", " ")}
-                        </span>
-                        <span>💳 {booking.paymentStatus}</span>
+                        </h1>
                       </div>
 
                       {user?.role === "provider" && booking.user && (

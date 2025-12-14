@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import User from "@/models/User";
+import prisma from "@/lib/prisma";
 import { hashPassword, generateToken } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
-
     const { name, email, password, phone, address, role } =
       await request.json();
 
@@ -19,7 +16,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
     if (existingUser) {
       return NextResponse.json(
         { error: "User already exists" },
@@ -31,18 +30,20 @@ export async function POST(request: NextRequest) {
     const hashedPassword = hashPassword(password);
 
     // Create user
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      phone,
-      address,
-      role: role || "user",
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        phone,
+        address,
+        role: role || "user",
+      },
     });
 
     // Generate token
     const token = generateToken({
-      userId: user._id.toString(),
+      userId: user.id,
       email: user.email,
       role: user.role,
     });
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
       {
         message: "User created successfully",
         user: {
-          id: user._id,
+          id: user.id,
           name: user.name,
           email: user.email,
           role: user.role,

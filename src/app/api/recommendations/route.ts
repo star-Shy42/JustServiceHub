@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import Service from "@/models/Service";
-import User from "@/models/User";
+import prisma from "@/lib/prisma";
 import { withAuth } from "@/middleware/auth";
 import { recommendServices } from "@/lib/ai";
 
 export const GET = withAuth(async (request: NextRequest, user: any) => {
   try {
-    await dbConnect();
-
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q");
     const limit = parseInt(searchParams.get("limit") || "10");
@@ -20,13 +16,22 @@ export const GET = withAuth(async (request: NextRequest, user: any) => {
       );
     }
 
-    // Get all active services
-    const services = await Service.find({ isActive: true })
-      .populate("provider", "name rating")
-      .limit(100); // Limit for performance
+    // Get all active services with provider info
+    const services = await prisma.service.findMany({
+      where: { isActive: true },
+      include: {
+        provider: {
+          select: {
+            name: true,
+            phone: true,
+          },
+        },
+      },
+      take: 100, // Limit for performance
+    });
 
     // Filter out services without providers
-    const validServices = services.filter((service) => service.provider);
+    const validServices = services.filter((service: any) => service.provider);
 
     if (validServices.length === 0) {
       return NextResponse.json({ recommendations: [] });
@@ -34,7 +39,7 @@ export const GET = withAuth(async (request: NextRequest, user: any) => {
 
     // Create service descriptions for AI matching
     const serviceDescriptions = validServices.map(
-      (service) =>
+      (service: any) =>
         `${service.name} ${service.description} ${
           service.category
         } ${service.tags.join(" ")}`
@@ -45,14 +50,14 @@ export const GET = withAuth(async (request: NextRequest, user: any) => {
 
     // Sort services by similarity score and return top results
     const recommendations = validServices
-      .map((service, index) => ({
+      .map((service: any, index: number) => ({
         service,
         similarity: similarities[index],
       }))
-      .sort((a, b) => b.similarity - a.similarity)
+      .sort((a: any, b: any) => b.similarity - a.similarity)
       .slice(0, limit)
-      .map(({ service, similarity }) => ({
-        id: service._id,
+      .map(({ service, similarity }: any) => ({
+        id: service.id,
         name: service.name,
         description: service.description,
         category: service.category,

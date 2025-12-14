@@ -1,79 +1,78 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import User from "@/models/User";
-import Service from "@/models/Service";
-import Review from "@/models/Review";
+import prisma from "@/lib/prisma";
 import { withAuth, withRole } from "@/middleware/auth";
 import { hashPassword } from "@/lib/auth";
 
 export const GET = withAuth(async (request: NextRequest, user: any) => {
   try {
-    await dbConnect();
-
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
 
-    // Get all providers
-    const providers = await User.find({ role: "provider" })
-      .select("name email phone address createdAt")
-      .skip((page - 1) * limit)
-      .limit(limit);
+    const skip = (page - 1) * limit;
 
-    // Get provider stats
+    // Get all providers with basic info
+    const providers = await prisma.user.findMany({
+      where: { role: "provider" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        address: true,
+        createdAt: true,
+      },
+      skip,
+      take: limit,
+    });
+
+    // Get provider stats for each provider
     const providerStats = await Promise.all(
-      providers.map(async (provider) => {
-        const services = await Service.find({ provider: provider._id });
-        const totalBookings = await Service.aggregate([
-          { $match: { provider: provider._id } },
-          {
-            $lookup: {
-              from: "bookings",
-              localField: "_id",
-              foreignField: "service",
-              as: "bookings",
-            },
-          },
-          { $unwind: "$bookings" },
-          { $count: "total" },
-        ]);
+      providers.map(async (provider: any) => {
+        // Get services count
+        const services = await prisma.service.findMany({
+          where: { providerId: provider.id },
+          select: { id: true },
+        });
 
-        const avgRating = await Review.aggregate([
-          {
-            $lookup: {
-              from: "services",
-              localField: "service",
-              foreignField: "_id",
-              as: "service",
+        // Get total bookings count
+        const totalBookings = await prisma.booking.count({
+          where: { providerId: provider.id },
+        });
+
+        // Get average rating from reviews
+        const avgRatingData = await prisma.review.aggregate({
+          where: {
+            service: {
+              providerId: provider.id,
             },
           },
-          { $unwind: "$service" },
-          { $match: { "service.provider": provider._id } },
-          {
-            $group: {
-              _id: null,
-              avgRating: { $avg: "$rating" },
-              count: { $sum: 1 },
-            },
+          _avg: {
+            rating: true,
           },
-        ]);
+          _count: {
+            rating: true,
+          },
+        });
 
         return {
-          id: provider._id,
+          id: provider.id,
           name: provider.name,
           email: provider.email,
           phone: provider.phone,
           address: provider.address,
           servicesCount: services.length,
-          totalBookings: totalBookings[0]?.total || 0,
-          avgRating: avgRating[0]?.avgRating || 0,
-          reviewCount: avgRating[0]?.count || 0,
+          totalBookings,
+          avgRating: avgRatingData._avg.rating || 0,
+          reviewCount: avgRatingData._count.rating || 0,
           createdAt: provider.createdAt,
         };
       })
     );
 
-    const total = await User.countDocuments({ role: "provider" });
+    const total = await prisma.user.count({
+      where: { role: "provider" },
+    });
 
     return NextResponse.json({
       providers: providerStats,
@@ -96,8 +95,6 @@ export const GET = withAuth(async (request: NextRequest, user: any) => {
 export const POST = withRole(["admin"])(
   async (request: NextRequest, user: any) => {
     try {
-      await dbConnect();
-
       const { name, email, password, phone, address } = await request.json();
 
       // Validation
@@ -109,7 +106,9 @@ export const POST = withRole(["admin"])(
       }
 
       // Check if user already exists
-      const existingUser = await User.findOne({ email });
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
       if (existingUser) {
         return NextResponse.json(
           { error: "User already exists" },
@@ -118,20 +117,22 @@ export const POST = withRole(["admin"])(
       }
 
       // Create provider
-      const provider = await User.create({
-        name,
-        email,
-        password: hashPassword(password),
-        phone,
-        address,
-        role: "provider",
+      const provider = await prisma.user.create({
+        data: {
+          name,
+          email,
+          password: hashPassword(password),
+          phone,
+          address,
+          role: "provider",
+        },
       });
 
       return NextResponse.json(
         {
           message: "Provider created successfully",
           provider: {
-            id: provider._id,
+            id: provider.id,
             name: provider.name,
             email: provider.email,
             phone: provider.phone,

@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/* ===================== ENUMS ===================== */
+
+enum UserRole {
+  user
+  provider
+  admin
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  in_progress
+  completed
+  cancelled
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  refunded
+}
+
+/* ===================== MODELS ===================== */
+
+model User {
+  id         String   @id @default(cuid())
+  name       String
+  email      String   @unique
+  password   String
+  phone      String?
+  address    String?
+  role       UserRole @default(user)
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  /* Relations */
+  providedServices Service[] @relation("ProviderServices")
+
+  bookingsAsUser     Booking[] @relation("UserBookings")
+  bookingsAsProvider Booking[] @relation("ProviderBookings")
+
+  reviewsAsUser     Review[] @relation("UserReviews")
+  reviewsAsProvider Review[] @relation("ProviderReviews")
+
+  @@map("users")
+}
+
+model Service {
+  id           String   @id @default(cuid())
+  name         String
+  description  String
+  category     String
+  price        Float
+  duration     Int
+  providerId   String
+  location     String
+  availability Json
+  tags         String[]
+  rating       Float    @default(0)
+  reviewCount  Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  /* Relations */
+  provider User     @relation("ProviderServices", fields: [providerId], references: [id])
+  bookings Booking[]
+  reviews  Review[]
+
+  @@map("services")
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  userId        String
+  serviceId     String
+  providerId    String
+  date          DateTime
+  status        BookingStatus @default(pending)
+  notes         String?
+  totalPrice    Float
+  paymentStatus PaymentStatus @default(pending)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  /* Relations */
+  user     User    @relation("UserBookings", fields: [userId], references: [id])
+  provider User    @relation("ProviderBookings", fields: [providerId], references: [id])
+  service  Service @relation(fields: [serviceId], references: [id])
+  review   Review?
+
+  @@map("bookings")
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  userId     String
+  serviceId  String
+  providerId String
+  bookingId  String   @unique
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  /* Relations */
+  user     User    @relation("UserReviews", fields: [userId], references: [id])
+  provider User    @relation("ProviderReviews", fields: [providerId], references: [id])
+  service  Service @relation(fields: [serviceId], references: [id])
+  booking  Booking @relation(fields: [bookingId], references: [id])
+
+  @@map("reviews")
+}

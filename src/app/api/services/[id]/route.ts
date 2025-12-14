@@ -1,34 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import Service from "@/models/Service";
-import Review from "@/models/Review";
+import prisma from "@/lib/prisma";
 import { withAuth, withRole } from "@/middleware/auth";
 
 export const GET = async (request: NextRequest): Promise<NextResponse> => {
   try {
-    await dbConnect();
-
     const { pathname } = new URL(request.url);
     const id = pathname.split("/").pop();
 
-    const service = await Service.findById(id).populate(
-      "provider",
-      "name email phone address"
-    );
+    const service = await prisma.service.findUnique({
+      where: { id },
+      include: {
+        provider: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            address: true,
+          },
+        },
+      },
+    });
 
     if (!service) {
       return NextResponse.json({ error: "Service not found" }, { status: 404 });
     }
 
     // Get reviews for this service
-    const reviews = await Review.find({ service: id })
-      .populate("user", "name")
-      .sort({ createdAt: -1 })
-      .limit(10);
+    const reviews = await prisma.review.findMany({
+      where: { serviceId: id },
+      include: {
+        user: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 10,
+    });
 
     return NextResponse.json({
       service: {
-        id: service._id,
+        id: service.id,
         name: service.name,
         description: service.description,
         category: service.category,
@@ -41,7 +57,7 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
         reviewCount: service.reviewCount,
         provider: service.provider
           ? {
-              id: service.provider._id,
+              id: service.provider.id,
               name: service.provider.name,
               email: service.provider.email,
               phone: service.provider.phone,
@@ -49,8 +65,8 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
             }
           : null,
       },
-      reviews: reviews.map((review) => ({
-        id: review._id,
+      reviews: reviews.map((review: any) => ({
+        id: review.id,
         rating: review.rating,
         comment: review.comment,
         user: {
@@ -71,12 +87,12 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
 export const PUT = withRole(["provider"])(
   async (request: NextRequest, user: any) => {
     try {
-      await dbConnect();
-
       const { pathname } = new URL(request.url);
       const id = pathname.split("/").pop();
 
-      const service = await Service.findOne({ _id: id, provider: user.userId });
+      const service = await prisma.service.findFirst({
+        where: { id, providerId: user.userId },
+      });
       if (!service) {
         return NextResponse.json(
           { error: "Service not found or unauthorized" },
@@ -96,9 +112,9 @@ export const PUT = withRole(["provider"])(
         isActive,
       } = await request.json();
 
-      const updatedService = await Service.findByIdAndUpdate(
-        id,
-        {
+      const updatedService = await prisma.service.update({
+        where: { id },
+        data: {
           name,
           description,
           category,
@@ -109,22 +125,21 @@ export const PUT = withRole(["provider"])(
           tags,
           isActive,
         },
-        { new: true }
-      );
+      });
 
       return NextResponse.json({
         message: "Service updated successfully",
         service: {
-          id: updatedService!._id,
-          name: updatedService!.name,
-          description: updatedService!.description,
-          category: updatedService!.category,
-          price: updatedService!.price,
-          duration: updatedService!.duration,
-          location: updatedService!.location,
-          availability: updatedService!.availability,
-          tags: updatedService!.tags,
-          isActive: updatedService!.isActive,
+          id: updatedService.id,
+          name: updatedService.name,
+          description: updatedService.description,
+          category: updatedService.category,
+          price: updatedService.price,
+          duration: updatedService.duration,
+          location: updatedService.location,
+          availability: updatedService.availability,
+          tags: updatedService.tags,
+          isActive: updatedService.isActive,
         },
       });
     } catch (error) {
@@ -140,17 +155,17 @@ export const PUT = withRole(["provider"])(
 export const DELETE = withRole(["provider"])(
   async (request: NextRequest, user: any) => {
     try {
-      await dbConnect();
-
       const { pathname } = new URL(request.url);
       const id = pathname.split("/").pop();
 
-      const service = await Service.findOneAndDelete({
-        _id: id,
-        provider: user.userId,
+      const service = await prisma.service.deleteMany({
+        where: {
+          id,
+          providerId: user.userId,
+        },
       });
 
-      if (!service) {
+      if (service.count === 0) {
         return NextResponse.json(
           { error: "Service not found or unauthorized" },
           { status: 404 }

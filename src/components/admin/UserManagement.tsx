@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import LocationMap from "@/components/LocationMap";
-import { useAuth } from "@/context/AuthContext";
 
 interface User {
   id: string;
@@ -42,13 +41,12 @@ export default function UserManagement({ onDataChange }: UserManagementProps) {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showLocationMap, setShowLocationMap] = useState(false);
   const [selectedUserForMap, setSelectedUserForMap] = useState<User | null>(
-    null
+    null,
   );
   const [userLocation, setUserLocation] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
-  const { getCurrentLocation } = useAuth();
 
   const fetchUsers = async () => {
     try {
@@ -85,22 +83,6 @@ export default function UserManagement({ onDataChange }: UserManagementProps) {
     fetchUsers();
   }, [currentPage, searchTerm, roleFilter]);
 
-  // Get user location when location map is shown
-  useEffect(() => {
-    if (showLocationMap) {
-      const fetchLocation = async () => {
-        const location = await getCurrentLocation();
-        if (location) {
-          setUserLocation({
-            lat: location.latitude,
-            lng: location.longitude,
-          });
-        }
-      };
-      fetchLocation();
-    }
-  }, [showLocationMap, getCurrentLocation]);
-
   const handleUpdateUser = async (userId: string, updates: any) => {
     try {
       const response = await fetch("/api/admin/users", {
@@ -128,7 +110,7 @@ export default function UserManagement({ onDataChange }: UserManagementProps) {
   const handleDeleteUser = async (userId: string) => {
     if (
       !confirm(
-        "Are you sure you want to delete this user? This action cannot be undone."
+        "Are you sure you want to delete this user? This action cannot be undone.",
       )
     ) {
       return;
@@ -238,7 +220,7 @@ export default function UserManagement({ onDataChange }: UserManagementProps) {
                     <div className="text-right ml-4">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(
-                          user.role
+                          user.role,
                         )}`}
                       >
                         {user.role}
@@ -433,15 +415,8 @@ export default function UserManagement({ onDataChange }: UserManagementProps) {
       {/* Location Map Modal */}
       {showLocationMap && selectedUserForMap && (
         <LocationMap
-          userLocation={userLocation}
-          targetLocation={
-            selectedUserForMap.latitude && selectedUserForMap.longitude
-              ? {
-                  lat: selectedUserForMap.latitude,
-                  lng: selectedUserForMap.longitude,
-                }
-              : null
-          }
+          showLocationMap={showLocationMap}
+          targetId={selectedUserForMap?.id}
           onClose={() => {
             setShowLocationMap(false);
             setSelectedUserForMap(null);

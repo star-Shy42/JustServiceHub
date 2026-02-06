@@ -1,31 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getUserFromRequest } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { getUserFromRequest } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
     const user = getUserFromRequest(request);
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user || user.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const search = searchParams.get('search') || '';
-    const status = searchParams.get('status') || '';
-    const paymentStatus = searchParams.get('paymentStatus') || '';
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search") || "";
+    const status = searchParams.get("status") || "";
+    const paymentStatus = searchParams.get("paymentStatus") || "";
 
     const skip = (page - 1) * limit;
 
     const where: any = {};
     if (search) {
       where.OR = [
-        { service: { name: { contains: search, mode: 'insensitive' } } },
-        { user: { name: { contains: search, mode: 'insensitive' } } },
-        { user: { email: { contains: search, mode: 'insensitive' } } },
-        { provider: { name: { contains: search, mode: 'insensitive' } } },
-        { provider: { email: { contains: search, mode: 'insensitive' } } },
+        { service: { name: { contains: search, mode: "insensitive" } } },
+        { user: { name: { contains: search, mode: "insensitive" } } },
+        { user: { email: { contains: search, mode: "insensitive" } } },
+        { provider: { name: { contains: search, mode: "insensitive" } } },
+        { provider: { email: { contains: search, mode: "insensitive" } } },
       ];
     }
     if (status) {
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         include: {
           user: {
             select: {
@@ -48,8 +48,6 @@ export async function GET(request: NextRequest) {
               name: true,
               email: true,
               phone: true,
-              latitude: true,
-              longitude: true,
             },
           },
           provider: {
@@ -58,8 +56,6 @@ export async function GET(request: NextRequest) {
               name: true,
               email: true,
               phone: true,
-              latitude: true,
-              longitude: true,
             },
           },
           service: {
@@ -85,8 +81,14 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Get unique statuses and payment statuses for filtering
-    const statuses = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
-    const paymentStatuses = ['pending', 'paid', 'refunded'];
+    const statuses = [
+      "pending",
+      "confirmed",
+      "in_progress",
+      "completed",
+      "cancelled",
+    ];
+    const paymentStatuses = ["pending", "paid", "refunded"];
 
     return NextResponse.json({
       bookings,
@@ -102,10 +104,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching bookings:', error);
+    console.error("Error fetching bookings:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
@@ -113,29 +115,41 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const user = getUserFromRequest(request);
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user || user.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { bookingId, updates } = await request.json();
 
     if (!bookingId) {
-      return NextResponse.json({ error: 'Booking ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Booking ID is required" },
+        { status: 400 },
+      );
     }
 
     // Validate status transitions
     if (updates.status) {
-      const validStatuses = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
+      const validStatuses = [
+        "pending",
+        "confirmed",
+        "in_progress",
+        "completed",
+        "cancelled",
+      ];
       if (!validStatuses.includes(updates.status)) {
-        return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+        return NextResponse.json({ error: "Invalid status" }, { status: 400 });
       }
     }
 
     // Validate payment status transitions
     if (updates.paymentStatus) {
-      const validPaymentStatuses = ['pending', 'paid', 'refunded'];
+      const validPaymentStatuses = ["pending", "paid", "refunded"];
       if (!validPaymentStatuses.includes(updates.paymentStatus)) {
-        return NextResponse.json({ error: 'Invalid payment status' }, { status: 400 });
+        return NextResponse.json(
+          { error: "Invalid payment status" },
+          { status: 400 },
+        );
       }
     }
 
@@ -152,8 +166,6 @@ export async function PATCH(request: NextRequest) {
             name: true,
             email: true,
             phone: true,
-            latitude: true,
-            longitude: true,
           },
         },
         provider: {
@@ -162,8 +174,6 @@ export async function PATCH(request: NextRequest) {
             name: true,
             email: true,
             phone: true,
-            latitude: true,
-            longitude: true,
           },
         },
         service: {
@@ -180,10 +190,10 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ booking: updatedBooking });
   } catch (error) {
-    console.error('Error updating booking:', error);
+    console.error("Error updating booking:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
@@ -191,15 +201,18 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const user = getUserFromRequest(request);
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user || user.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
-    const bookingId = searchParams.get('id');
+    const bookingId = searchParams.get("id");
 
     if (!bookingId) {
-      return NextResponse.json({ error: 'Booking ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Booking ID is required" },
+        { status: 400 },
+      );
     }
 
     // Check if booking has a review
@@ -211,14 +224,14 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!bookingData) {
-      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+      return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
     // Don't allow deletion of completed bookings with reviews
     if (bookingData.review) {
       return NextResponse.json(
-        { error: 'Cannot delete booking with existing review' },
-        { status: 400 }
+        { error: "Cannot delete booking with existing review" },
+        { status: 400 },
       );
     }
 
@@ -226,12 +239,12 @@ export async function DELETE(request: NextRequest) {
       where: { id: bookingId },
     });
 
-    return NextResponse.json({ message: 'Booking deleted successfully' });
+    return NextResponse.json({ message: "Booking deleted successfully" });
   } catch (error) {
-    console.error('Error deleting booking:', error);
+    console.error("Error deleting booking:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

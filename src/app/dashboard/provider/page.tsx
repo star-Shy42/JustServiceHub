@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
 
 interface Service {
   id: string;
@@ -44,13 +43,24 @@ export default function ProviderDashboard() {
     isActive: true,
   });
   const [submitting, setSubmitting] = useState(false);
-  const user: any = JSON.parse(localStorage.getItem("user") as string);
+  const [user, setUser] = useState<any>(null);
+
+  // Initialize user from localStorage on client side
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   const fetchServices = async () => {
+    if (!user) return;
     try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
       const response = await fetch("/api/services", {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       const data = await response.json();
@@ -204,11 +214,14 @@ export default function ProviderDashboard() {
     "sunday",
   ];
 
+  // Fetch services only after user is loaded
   useEffect(() => {
-    fetchServices();
-  }, []);
+    if (user) {
+      fetchServices();
+    }
+  }, [user]);
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="flex justify-center items-center min-h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
